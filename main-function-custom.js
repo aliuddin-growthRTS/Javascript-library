@@ -44,7 +44,7 @@ class mainFunctionCustom {
      *  parse string to date, which always used for json where it used iso format to stored date
      * @param {String} val string in iso format
      */
-    static  __stringToDateParser = (val) => {
+    static __stringToDateParser = (val) => {
         let result = undefined;
         let minDate = new Date('0002-01-01T00:00:00Z');
         try {
@@ -77,13 +77,13 @@ class mainFunctionCustom {
                         if (data.hasOwnProperty(propArr[0])) {
                             let dataVal = data[propArr[0]];
                             if (Object.prototype.toString.call(dataVal) === "[object String]") {
-                                data[propArr[0]] = _stringToDateParser((data[propArr[0]]));
+                                data[propArr[0]] = mainFunctionCustom.__stringToDateParser((data[propArr[0]]));
                             }
                             else if (Object.prototype.toString.call(dataVal) === "[object Array]") {
                                 if (typeof dataVal[0] !== "undefined") {
                                     let newArr = [];
                                     for (let i in dataVal) {
-                                        newArr.push(__stringToDateParser(dataVal[i]));
+                                        newArr.push(mainFunctionCustom.__stringToDateParser(dataVal[i]));
                                     }
                                     data[propArr[0]] = newArr;
                                 }
@@ -94,12 +94,12 @@ class mainFunctionCustom {
                         if (data.hasOwnProperty(propArr[0])) {
                             let dataVal = data[propArr[0]];
                             if (Object.prototype.toString.call(dataVal) === "[object Object]") {
-                                data[propArr[0]] = __objectDateMaker(dataVal, [propArr[1]]);
+                                data[propArr[0]] = mainFunctionCustom.__objectDateMaker(dataVal, [propArr[1]]);
                             }
                             else if (Object.prototype.toString.call(dataVal) === "[object Array]") {
                                 let newArr = [];
                                 for (let i in dataVal) {
-                                    newArr.push(__objectDateMaker(dataVal[i], [propArr[1]]));
+                                    newArr.push(mainFunctionCustom.__objectDateMaker(dataVal[i], [propArr[1]]));
                                 }
                                 data[propArr[0]] = newArr;
                             }
@@ -110,5 +110,12 @@ class mainFunctionCustom {
         }
         catch (e) { console.errror(e); }
         return data;
+    }
+    /**
+     * To delay.
+     * @param {Number} ms millisecond
+     */
+    static __sleep = (ms) => {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 }

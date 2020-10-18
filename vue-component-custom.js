@@ -276,21 +276,30 @@ class vueCustomComponent {
 </div>
 `
     }
+
     /**
      * component that will generate the functionallity for the table like filter, sort and so on.
      * */
     static __tableFunction = {
-        mounted() {
-            this.runOnMount();
+        created() {
+            this.runOnCreated();
+            this.runOnUpdate(this.tableData);
+        },
+        beforeUpdate() {
+            //this.runOnUpdate();
         },
         props: {
             'tableData': { // the data to show in table
                 'type': Array,
                 'default'() { return []; }
             },
-            'defaulSorter': { //the key that will be the default sorter when the table first time load
+            'defaultSorter': { //the key that will be the default sorter when the table first time load
                 'type': String,
                 'default': ""
+            },
+            'defaultOrder': {//string weither asc or desc will be default
+                'type': String,
+                'default': "asc"
             },
             'filterTextKeys': { //key name list that will have filter text functionallity
                 'type': Array,
@@ -300,7 +309,7 @@ class vueCustomComponent {
                 'type': Array,
                 'default'() { return []; }
             },
-            'filterCheckboxKeys': {//key name list that will have filter checkbox functionallity
+            'filterCheckBoxKeys': {//key name list that will have filter checkbox functionallity
                 'type': Array,
                 'default'() { return []; }
             },
@@ -333,12 +342,13 @@ class vueCustomComponent {
                 'tableDataLocalOnlyId': [], // to stored table data, but only for its created Id
                 'dateFilter': {},//to use as modal object for the date filter input in view also the data related to it
                 'checkBoxFilter': {},//to use as modal object for the checkbox filter input in view also the data related to it
+                'triggerDateInput': true, //will change from true to false and otherwise, this to resolve bug while using element-ui datepicker
             }
         },
         methods: {
-            'runOnMount'() {
+            'runOnCreated'() {
                 let filterTextProp = {}; let textFilterProp = {};
-                this.filterTextKeys.forEach(function (val, index) {
+                this.filterTextKeys.forEach((val, index) => {
                     filterTextProp[val] = { 'filterText': '' };
                     textFilterProp[val] = { 'filterText': '' };
                 });
@@ -347,25 +357,25 @@ class vueCustomComponent {
                     filterDateProp[val] = {};
                 });
                 let filterCheckBoxProp = {}; let filterCheckBoxProp2 = {};
-                this.filterCheckBoxKeys.forEach(function (val, index) {
+                this.filterCheckBoxKeys.forEach((val, index) => {
                     filterCheckBoxProp[val] = {};
                     filterCheckBoxProp2[val] = { "isCheckAll": true, "checkList": [] };
                 });
-                let sorterProp = { "key": sorterKeys, "sort": [] };
-                this.sorterKeys.forEach(function (val, index) {
-                    sorterProp["sort"].push("asc");
+                let sorterProp = { "key": this.sorterKeys, "sort": [] };
+                this.sorterKeys.forEach((val, index) => {
+                    sorterProp["sort"].push('asc');
                 });
                 this.tableFilterProp = {
                     'totalRootChange': 0 /* total change of the root*/, 'totalChange': 0/*how many times filter is used*/, "prop": this.defaultSorter,
                     "limitDown": 0/*the index row start to show in the table*/, "itemPerPage": this.rowPerPage, "currentPage": 1/*the current page*/, 'filterText': _.cloneDeep(filterTextProp)/*stored the previous filter text details*/,
                     "filterDate": _.cloneDeep(filterDateProp)/*stored the previous filter date details*/, "filterCheckBox": _.cloneDeep(filterCheckBoxProp)/*stored the previous filter checkbox details*/,
-                    "sorter": _.cloneDeep(filterSorterProp)/*stored the previous filter sort details*/
+                    "sorter": _.cloneDeep(sorterProp)/*stored the previous filter sort details*/
                 };
                 this.oldTableFilterProp = {
                     'totalRootChange': 0, 'totalChange': 0, "prop": null,
                     "limitDown": 0, "itemPerPage": this.rowPerPage, "currentPage": 1, 'filterText': _.cloneDeep(filterTextProp),
                     "filterDate": _.cloneDeep(filterDateProp), "filterCheckBox": _.cloneDeep(filterCheckBoxProp),
-                    "sorter": _.cloneDeep(filterSorterProp)
+                    "sorter": _.cloneDeep(sorterProp)
                 };
                 this.textFilter = _.cloneDeep(textFilterProp);
                 this.checkBoxFilter = _.cloneDeep(filterCheckBoxProp2);
@@ -435,7 +445,7 @@ class vueCustomComponent {
                         this.tableFilterProp.sorter.key.unshift(colName);
                         this.tableFilterProp.sorter.sort.unshift(df);
                     }
-                    this.totalChange++;
+                    this.tableFilterProp.totalChange++;
                 }
                 finally { this.isInProg = false; }
             },
@@ -447,7 +457,7 @@ class vueCustomComponent {
             'filterTextFunc'(prop, forceRun = false) {
                 try {
                     this.isInProg = true;
-                    inData = _.clone(this.tableDataLocal);
+                    let inData = _.clone(this.tableDataLocal);
                     if (prop === '') {
                         this.tableDataChange = inData;
                         this.tableFilterProp.totalChange++;
@@ -460,7 +470,16 @@ class vueCustomComponent {
 
                                 if (/\S/.test(textN) && textN !== null) {
                                     inData = _.filter(this.tableDataLocal, (o) => {
-                                        return o[prop] === textN;
+                                        let isTrue = false;
+                                        try {
+                                            let innerObj = _.get(o, prop, null);
+                                            let innerString = _.toString(innerObj).toLowerCase();
+                                            if (innerString.includes(textN.toLowerCase())) {
+                                                isTrue = true;
+                                            }
+                                        }
+                                        catch (e) { console.log(e); }
+                                        return isTrue;
                                     });
                                 }
                                 //differentiate with the tableDataLocal that have only id, where only different data will be taken
@@ -469,7 +488,7 @@ class vueCustomComponent {
                                 this.tableFilterProp.filterText[prop].filteredData = outData;
                                 // then take the real needed rows
                                 //for filterText
-                                for (let inKey in local[uniqueKey + 'tableFilterProp']["filterText"]) {
+                                for (let inKey in this.tableFilterProp.filterText) {
                                     if (inKey !== prop) {
                                         inData = _.differenceBy(inData, this.tableFilterProp.filterText[inKey].filteredData, this.uniqueColumn);
                                     }
@@ -507,14 +526,15 @@ class vueCustomComponent {
                             minDate = this.dateFilter[key].startDate;
                         }
                         if (_.isDate(this.dateFilter[key].endDate)) {
-                            maxDate = this.dateFilter[key].endDate;
+                            maxDate = _.clone(this.dateFilter[key].endDate);
                             maxDate.setDate(maxDate.getDate() + 1); //add 1day, because we will user '<' operator. so the maxdate must be included
                         }
                         //return only data that will satisfy the condition
                         inData = _.filter(this.tableDataLocal, (o) => {
                             let yes = false;
                             try {
-                                if (o[key] >= minDate && o[key] < maxDate) {
+                                let theDate = _.get(o, key, null);
+                                if (theDate >= minDate && theDate <= maxDate) {
                                     yes = true;
                                 }
                             }
@@ -542,6 +562,12 @@ class vueCustomComponent {
                 finally { this.isInProg = false; }
             },
             /**
+             * use to catch input event on element-ui datepicker sice there's bug where the view not updated
+             * */
+            'filterDateInput'() {
+                this.triggerDateInput = !this.triggerDateInput;
+            },
+            /**
              * function to create unique filter. will be called whenever data refreshed.
              * */
             'createUniqueFilter'() {
@@ -561,18 +587,265 @@ class vueCustomComponent {
                 }
                 finally { this.isInProg = false; }
             },
+            /**
+             * function that will be used for checkbox filter
+             * @param {String} key the column name that need to be filtered
+             */
+            'filterCheckBoxFunc'(key) {
+                try {
+                    this.isInProg = true;
+                    if (key !== null) {
+                        mainFunctionCustom.__sleep(100).then(() => {
+                            let inData = _.clone(this.tableDataLocal);
+                            try {
+                                let newArr = [];
+                                //get current selected checkbox
+                                let arrSelects = this.checkBoxFilter[key].checkList.map((o) => {
+                                    if (o['isSelected']) {
+                                        return o.text;
+                                    }
+                                });
+                                //get only checkedbox
+                                newArr = _.filter(inData, function (o) {
+                                    let isTrue = false;
+                                    try {
+                                        let innerObj = _.get(o, key, null);
+                                        let innerString = _.toString(innerObj);
+                                        isTrue = arrSelects.includes(innerString);
+                                    }
+                                    catch (e) { console.log(e); }
+                                    return isTrue;
+                                });
+                                //if checklist for that key exist
+                                if (this.checkBoxFilter[key].checkList.length > 0) {
+                                    inData = newArr;
+                                }
+                                //this part same as text filter, but start with checkbox first
+                                let outData = _.differenceBy(this.tableDataLocalOnlyId, inData, this.uniqueColumn);
+                                this.tableFilterProp.checkBoxFilter[key].filteredData = outData;
+                                for (let inKey in this.tableFilterProp.filterCheckBox) {
+                                    if (inKey !== key) {
+                                        inData = _.differenceBy(inData, this.tableFilterProp.filterCheckBox[inKey].filteredData, this.uniqueColumn);
+                                    }
+                                }
+                                for (let inKey in this.tableFilterProp.filterText) {
+                                    inData = _.differenceBy(inData, this.tableFilterProp.filterText[inKey].filteredData, this.uniqueColumn);
+                                }
+                                for (let inKey in this.tableFilterProp.filterDate) {
+                                    inData = _.differenceBy(inData, this.tableFilterProp.filterDate[inKey].filteredData, this.uniqueColumn);
+                                }
+                                this.tableDataChange = inData;
+                            } catch (e) { console.log(e); }
+                        });
+                    }
+                    else {// if key is null, then get all
+                        let inData = _.clone(this.tableDataLocal);
+                        this.tableDataChange = inData;
+                    }
+                    this.tableFilterProp.totalChange++;
+                }
+                finally { this.isInProg = false; }
+            },
+            /**
+             * function for check all checkbox
+             * @param {String} key Property/column name that need to be cheked all
+             */
+            'filterCheckBoxCheckAllFunc'(key) {
+                this.checkBoxFilter[key].isCheckAll = !this.checkBoxFilter[key].isCheckAll;
+                this.checkBoxFilter[key].checkList.forEach(function (val, index) {
+                    this.checkBoxFilter[key].checkList[index].isSelected = this.checkBoxFilter[key].isCheckAll;
+                });
+            },
+            /**
+             * functiton that used to uncheck checked all all checkbox when one of the checkbox list is unchecked
+             * @param {String} key
+             * @param {Boolean} isCheck
+             */
+            'filtercheckBoxAlterCheckAll'(key, isCheck) {
+                if (!isCheck && this.checkBoxFilter[key].isCheckAll) {
+                    this.checkBoxFilter[key].isCheckAll = false;
+                }
+            },
+            'getLocalTableData'() {
+                let data = this.tableDataLocal;
+                if (this.useLocalCopy) {
+                    return _.cloneDeep(data);
+                }
+                else {
+                    return data;
+                }
+            },
+            'getChangeTableData'() {
+                let data = this.tableDataChange;
+                if (this.useLocalCopy) {
+                    return _.cloneDeep(data);
+                }
+                else {
+                    return data;
+                }
+            },
+            'getCurrentShowedData'() {
+                let data = this.sortedItem;
+                if (this.useLocalCopy) {
+                    return _.cloneDeep(data);
+                }
+                else {
+                    return data;
+                }
+            },
+            /**
+             * function that will run on tabledata props change.
+             * */
+            'runOnUpdate'(newVal) {
+                try {
+                    this.isInProg = true;
+                    let data = newVal;
+                    // if use local copy, deep copy the tabledata prop
+                    if (this.useLocalCopy) {
+                        data = _.cloneDeep(data);
+                    }
+                    //if user not specify unique key, create custom unique key
+                    if (this.uniqueColumn === '__uniqueId__') {
+                        data.forEach((val, index) => {
+                            Object.defineProperty(data[index], this.uniqueColumn, {
+                                enumerable: false,
+                                writable: false,
+                                value: index
+                            });
+                        });
+                    }
+                    this.tableDataLocal = data;
+                    this.tableDataChange = data;
+                    this.tableFilterProp.totalRootChange++;
+                    // this.tableFilterProp.totalChange++;
+                    //create a tabledatalocalonlyid array
+                    let objArr = [];
+                    for (let i = 0; i < data.length; i++) {
+                        if (data[i].hasOwnProperty(this.uniqueColumn)) {
+                            let newObj = {};
+                            Object.defineProperty(newObj, this.uniqueColumn, {
+                                enumerable: false,
+                                writable: false,
+                                value: data[i][this.uniqueColumn]
+                            });
+                            objArr.push(newObj);
+                        }
+                        else {
+                            console.warn("no property '" + this.uniqueColumn + "' for tableData at row number " + (i + 1) + ". this may result unexpected behaviour of the functioning table.");
+                        }
+                    }
+                    data.forEach((val, index) => {
+                        let newObj = {};
+                        Object.defineProperty(newObj, this.uniqueColumn, {
+                            enumerable: false,
+                            writable: false,
+                            value: val[this.uniqueColumn]
+                        });
+                        objArr.push(newObj);
+                    });
+                    this.tableDataLocalOnlyId = _.clone(objArr);
+                    // here some initializing
+                    for (let prop in this.tableFilterProp.filterText) {
+                        this.tableFilterProp.filterText[prop].filteredData = [];
+                    }
+                    for (let prop in this.tableFilterProp.filterDate) {
+                        this.tableFilterProp.filterDate[prop].filteredData = [];
+                    }
+                    //create first uniquefilter
+                    this.createUniqueFilter();
+
+                    if (_.isEmpty(this.tableFilterProp.filterText)) {
+                        this.filterTextFunc('', true);
+                    }
+                    else {
+                        for (let o in this.tableFilterProp.filterText) {
+                            this.filterTextFunc(o, true);
+                        }
+                    }
+                    if (_.isEmpty(this.tableFilterProp.filterDate)) {
+                        // local[uniqueKey + 'filterDateFunc']('');
+                    }
+                    else {
+                        for (let o in this.tableFilterProp.filterDate) {
+                            this.filterDateFunc(o);
+                        }
+                    }
+                    if (_.isEmpty(this.tableFilterProp.filterCheckBox)) {
+                        //local[uniqueKey + 'filterCheckBoxFunc'](null);
+                    }
+                    else {
+                        for (let o in this.tableFilterProp.filterCheckBox) {
+                            this.filterCheckBoxFunc(o);
+                        }
+                    }
+                }
+                catch (e) { console.error(e) }
+                finally {
+                    this.isInProg = false;
+                }
+            },
             'testMethod'(x) { alert(x); }
+        },
+        watch: {
+            'tableData': {
+                'handler': function (newVal, oldVal) {
+                    //if (!_.isEqual(newVal, oldVal)) {
+                    this.runOnUpdate(newVal);
+                    //   }
+                },
+                'deep': true,
+                //'immediate':true
+            }
         },
         computed: {
             'sortedItem'() {
                 let returner = [];
-                returner = this.tableData;
+                try {
+                    this.isInProg = true;
+                    if (this.tableFilterProp.totalChange !== this.oldTableFilterProp.totalChange) {
+                        if (this.tableFilterProp.totalChange === 1) {
+                            this.orderedItems = _.orderBy(this.tableDataChange, [this.defaultSorter].concat(this.tableFilterProp.sorter.key), [this.defaultOrder].concat(this.tableFilterProp.sorter.sort));
+                            //  this.orderedItems = _.orderBy(this.orderedItems, this.tableFilterProp.sorter.key, this.tableFilterProp.sorter.sort);
+                        }
+                        else {
+                            this.orderedItems = _.orderBy(this.tableDataChange, this.tableFilterProp.sorter.key, this.tableFilterProp.sorter.sort);
+                        }
+                        this.oldTableFilterProp.totalChange = this.tableFilterProp.totalChange;
+                        this.oldTableFilterProp.totalRootChange = this.tableFilterProp.totalRootChange;
+                    }
+                    returner = _.filter(this.orderedItems, (o, index) => {
+                        if (index >= this.limitDown && index < (this.limitDown + this.tableFilterProp.itemPerPage)) {
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    });
+                    // returner = local.limitBy(local[uniqueKey + 'orderedItems'], local[uniqueKey + 'tableFilterProp'].itemPerPage, local[uniqueKey + 'limitDown']);
+                }
+                finally { this.isInProg = false; }
                 return returner;
-            }
+            },
+            'limitDown'() {
+                let newVal;
+                try {
+                    this.isInProg = true;
+                    if (this.tableFilterProp.currentPage === 1) {
+                        newVal = 0;
+                    }
+                    else {
+                        newVal = (this.tableFilterProp.currentPage - 1) * this.tableFilterProp.itemPerPage;
+                        //local[uniqueKey + 'tableFilterProp']['limitDown'] = newVal;
+                    }
+                }
+                finally { this.isInProg = false; }
+                return newVal;
+            },
         },
         template: `
 <div>
-<slot :sortedItem = "sortedItem"></slot>
+<slot :filterDateInput='filterDateInput'  :triggerDateInput='triggerDateInput' :tableDataChange = "tableDataChange" :tableFilterProp='tableFilterProp' :sortItem='sortItem' :textFilter='textFilter' :filterTextFunc='filterTextFunc' :dateFilter='dateFilter' :filterDateFunc='filterDateFunc'
+ :filterCheckBoxFunc='filterCheckBoxFunc' :filterCheckBoxCheckAllFunc='filterCheckBoxCheckAllFunc' :filtercheckBoxAlterCheckAll='filtercheckBoxAlterCheckAll' :checkBoxFilter='checkBoxFilter' :sortedItem = 'sortedItem'></slot>
 </div>
 `
     }

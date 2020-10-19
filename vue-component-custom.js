@@ -849,5 +849,91 @@ class vueCustomComponent {
 </div>
 `
     }
+    /**
+     * custom component for select2
+     * */
+    static __select2 = {
+        props: {
+            "multiple": {
+                "type": Boolean,
+                "default": false
+            },
+            "data": {
+                "type": Array,
+                "default"() {
+                    return [];
+                }
+            },
+            "options": {
+                "type": Object,
+                "default"() {
+                    return {};
+                }
+            },
+            "value": {
+            },
+        },
+        data() {
+            return {
+                "innerData": {},
+            }
+        },
+        mounted: function () {
+            let opt = {};
+            opt = _.cloneDeep(this.options);
+            opt["data"] = this.data;
+            var vm = this;
+            $(this.$el)
+                // init select2
+                .select2(opt)
+                .val(this.value.id)
+                .trigger("change")
+                // emit event on change.
+                .on("change", function () {
+                    //first get the id selected, the get the object with the id.
+                    let id = this.value;
+                    let currentData = _.find(vm.data, function (o) { return o.id == id });
+                    vm.$emit("input", currentData);
+                });
+        },
+        computed: {
+            "localOptions": function () {
+                let option = {};
+                option = _.cloneDeep(this.options);
+                option["data"] = this.data;
+                return option;
+            }
+        },
+        watch: {
+            value: function (value) {
+                // update value
+                $(this.$el).val(value.id).trigger("change");
+                this.$emit("on-change-select");
+            },
+            data: function (data) {
+                // update data
+                let opt = {};
+                opt = _.cloneDeep(this.options);
+                opt["data"] = data;
+                $(this.$el).empty().select2(opt);
+            },
+            options: function (options) {
+                // update data
+                let opt = {};
+                opt = _.cloneDeep(options);
+                opt["data"] = this.data;
+                $(this.$el).empty().select2(opt);
+            }
+        },
+        destroyed: function () {
+            $(this.$el).off().select2("destroy");
+        },
+        template: `
+<select :multiple="multiple">
+            <slot></slot>
+        </select>
+`,
+    }
+
 }
 

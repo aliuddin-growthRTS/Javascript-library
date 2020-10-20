@@ -4,7 +4,7 @@
  * */
 
 
-class vueCustomComponent {
+class VueCustomComponent {
 
     /**
     *component using element - ui el - tooltip.only will show tooltip if text is overflowed
@@ -226,7 +226,7 @@ class vueCustomComponent {
                         }
 
                         this.inputNow.ele.addEventListener("change", (evt) => { //add on change event
-                            if (mainFunctionCustom.__notOnlywhiteSpace(evt.target.value)) {
+                            if (MainFunctionCustom.__notOnlywhiteSpace(evt.target.value)) {
                                 if (this.inputNow.ele.type.toLowerCase() === 'number') {
                                     if (_.isFinite(Number(evt.target.value))) {
                                         this.inputNow.value = Number(evt.target.value);
@@ -595,7 +595,7 @@ class vueCustomComponent {
                 try {
                     this.isInProg = true;
                     if (key !== null) {
-                        mainFunctionCustom.__sleep(100).then(() => {
+                        MainFunctionCustom.__sleep(100).then(() => {
                             let inData = _.clone(this.tableDataLocal);
                             try {
                                 let newArr = [];

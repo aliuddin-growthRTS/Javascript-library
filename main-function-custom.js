@@ -3,7 +3,7 @@
  * please include lodash.js
  * */
 
-class mainFunctionCustom {
+class MainFunctionCustom {
 
     /**to check if string
      * 
@@ -77,13 +77,13 @@ class mainFunctionCustom {
                         if (data.hasOwnProperty(propArr[0])) {
                             let dataVal = data[propArr[0]];
                             if (Object.prototype.toString.call(dataVal) === "[object String]") {
-                                data[propArr[0]] = mainFunctionCustom.__stringToDateParser((data[propArr[0]]));
+                                data[propArr[0]] = MainFunctionCustom.__stringToDateParser((data[propArr[0]]));
                             }
                             else if (Object.prototype.toString.call(dataVal) === "[object Array]") {
                                 if (typeof dataVal[0] !== "undefined") {
                                     let newArr = [];
                                     for (let i in dataVal) {
-                                        newArr.push(mainFunctionCustom.__stringToDateParser(dataVal[i]));
+                                        newArr.push(MainFunctionCustom.__stringToDateParser(dataVal[i]));
                                     }
                                     data[propArr[0]] = newArr;
                                 }
@@ -94,12 +94,12 @@ class mainFunctionCustom {
                         if (data.hasOwnProperty(propArr[0])) {
                             let dataVal = data[propArr[0]];
                             if (Object.prototype.toString.call(dataVal) === "[object Object]") {
-                                data[propArr[0]] = mainFunctionCustom.__objectDateMaker(dataVal, [propArr[1]]);
+                                data[propArr[0]] = MainFunctionCustom.__objectDateMaker(dataVal, [propArr[1]]);
                             }
                             else if (Object.prototype.toString.call(dataVal) === "[object Array]") {
                                 let newArr = [];
                                 for (let i in dataVal) {
-                                    newArr.push(mainFunctionCustom.__objectDateMaker(dataVal[i], [propArr[1]]));
+                                    newArr.push(MainFunctionCustom.__objectDateMaker(dataVal[i], [propArr[1]]));
                                 }
                                 data[propArr[0]] = newArr;
                             }
@@ -108,7 +108,7 @@ class mainFunctionCustom {
                 }
             }
         }
-        catch (e) { console.errror(e); }
+        catch (e) { console.error(e); }
         return data;
     }
     /**

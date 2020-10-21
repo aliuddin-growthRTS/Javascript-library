@@ -272,7 +272,11 @@ class VueCustomComponent {
         },
         template: `
    <div :tabindex='tabindex' :class="className +' '+classDiv" @mouseup="inputNow.isMouse=false"
-@mousedown="inputNow.isMouse=true" @focus="insertElement()" @dblclick="insertElement()" v-text='value'>
+@mousedown="inputNow.isMouse=true" @focus="insertElement()" @dblclick="insertElement()">
+<slot name='text'></slot>
+<template v-if='!$slots.text'>
+{{value}}
+</template>
 </div>
 `
     }

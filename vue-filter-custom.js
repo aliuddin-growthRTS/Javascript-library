@@ -29,7 +29,7 @@ class VueFilterCustom {
 *custom number filter based on numbro.js
 * @param {String | Number} value the value that need to be parsed
 * @param {Boolean} showNA show N/A number not valid
-* @param {String} format foramat
+* @param {String|Object} format foramat
  **/
     static __numberFilter  =(value, showNA = true, format = "0,0.00")=> {
         let result = ""; let converted = false;

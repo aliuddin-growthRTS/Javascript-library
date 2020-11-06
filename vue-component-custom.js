@@ -144,6 +144,10 @@ class VueCustomComponent {
                 'type': Number,
                 'default': 100,
             },
+            'isSingleClick': {
+                'type': Boolean,
+                'default': false
+            },
             "value": {
 
             },
@@ -197,64 +201,66 @@ class VueCustomComponent {
             }
         },
         methods: {
-            "insertElement"() {
-                this.inputNow.value = null;
-                try {
-                    if (!this.inputNow.isMouse) { //check if current click released on the div
-                        if (this.inputType.toLowerCase() === 'textarea') {
-                            this.inputNow.ele = document.createElement('textarea');
-                        }
-                        else {
-                            this.inputNow.ele = document.createElement('input');
-                            this.inputNow.ele.type = this.inputType; //insert type
-                        }
-                        this.inputNow.ele.className = this.className + " " + this.classInput; //insert class
-                        this.inputNow.ele.value = this.value; //bind value to input
-                        //bind some input property
-                        this.inputNow.ele.disabled = this.disabled;
-                        this.inputNow.ele.name = this.name;
-                        this.inputNow.ele.placeholder = this.placeholder;
-                        this.inputNow.ele.readonly = this.readonly;
-                        this.inputNow.ele.required = this.required;
-                        this.inputNow.ele.autofocus = this.autofocus;
-                        this.inputNow.ele.maxlength = this.maxlength;
-                        //bind for input type number
-                        if (this.inputNow.ele.type.toLowerCase() === 'number') {
-                            this.inputNow.ele.max = this.max;
-                            this.inputNow.ele.max = this.max;
-                            this.inputNow.ele.step = this.step;
-                        }
+            "insertElement"(isInsert = true) {
+                if (isInsert) {
+                    this.inputNow.value = null;
+                    try {
+                        if (!this.inputNow.isMouse) { //check if current click released on the div
+                            if (this.inputType.toLowerCase() === 'textarea') {
+                                this.inputNow.ele = document.createElement('textarea');
+                            }
+                            else {
+                                this.inputNow.ele = document.createElement('input');
+                                this.inputNow.ele.type = this.inputType; //insert type
+                            }
+                            this.inputNow.ele.className = this.className + " " + this.classInput; //insert class
+                            this.inputNow.ele.value = this.value; //bind value to input
+                            //bind some input property
+                            this.inputNow.ele.disabled = this.disabled;
+                            this.inputNow.ele.name = this.name;
+                            this.inputNow.ele.placeholder = this.placeholder;
+                            this.inputNow.ele.readonly = this.readonly;
+                            this.inputNow.ele.required = this.required;
+                            this.inputNow.ele.autofocus = this.autofocus;
+                            this.inputNow.ele.maxlength = this.maxlength;
+                            //bind for input type number
+                            if (this.inputNow.ele.type.toLowerCase() === 'number') {
+                                this.inputNow.ele.max = this.max;
+                                this.inputNow.ele.max = this.max;
+                                this.inputNow.ele.step = this.step;
+                            }
 
-                        this.inputNow.ele.addEventListener("change", (evt) => { //add on change event
-                            if (MainFunctionCustom.__notOnlywhiteSpace(evt.target.value)) {
-                                if (this.inputNow.ele.type.toLowerCase() === 'number') {
-                                    if (_.isFinite(Number(evt.target.value))) {
-                                        this.inputNow.value = Number(evt.target.value);
+                            this.inputNow.ele.addEventListener("change", (evt) => { //add on change event
+                                if (MainFunctionCustom.__notOnlywhiteSpace(evt.target.value)) {
+                                    if (this.inputNow.ele.type.toLowerCase() === 'number') {
+                                        if (_.isFinite(Number(evt.target.value))) {
+                                            this.inputNow.value = Number(evt.target.value);
+                                        }
+                                    }
+                                    else {
+                                        this.inputNow.value = evt.target.value;
                                     }
                                 }
                                 else {
-                                    this.inputNow.value = evt.target.value;
+                                    this.inputNow.value = null;
                                 }
-                            }
-                            else {
-                                this.inputNow.value = null;
-                            }
-                            this.$emit('input', this.inputNow.value);
-                        });
-                        this.inputNow.ele.addEventListener("blur", (evt) => {
-                            this.removeElement();
-                        });
-                        this.$el.parentElement.appendChild(this.inputNow.ele); //append as sibling to the div
-                        this.$el.style = "display : none !important"; //hide current div
-                        this.inputNow.ele.focus();
+                                this.$emit('input', this.inputNow.value);
+                            });
+                            this.inputNow.ele.addEventListener("blur", (evt) => {
+                                this.removeElement();
+                            });
+                            this.$el.parentElement.appendChild(this.inputNow.ele); //append as sibling to the div
+                            this.$el.style = "display : none !important"; //hide current div
+                            this.inputNow.ele.focus();
+                        }
                     }
-                }
-                catch (e) {
-                    console.error(e);
-                    if (this.inputNow.ele !== null) {
-                        this.inputNow.ele.remove();
+                    catch (e) {
+                        console.error(e);
+                        if (this.inputNow.ele !== null) {
+                            this.inputNow.ele.remove();
+                        }
+                        this.inputNow.ele = null;
                     }
-                    this.inputNow.ele = null;
                 }
             },
             "removeElement"() {
@@ -272,7 +278,7 @@ class VueCustomComponent {
         },
         template: `
    <div :tabindex='tabindex' :class="className +' '+classDiv" @mouseup="inputNow.isMouse=false"
-@mousedown="inputNow.isMouse=true" @focus="insertElement()" @dblclick="insertElement()">
+@mousedown="inputNow.isMouse=true" @focus="insertElement()" @dblclick="insertElement()" @click="insertElement(isSingleClick)">
 <slot name='text'></slot>
 <template v-if='!$slots.text'>
 {{value}}

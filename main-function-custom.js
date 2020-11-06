@@ -202,5 +202,34 @@ class MainFunctionCustom {
             return "";
         }
     }
+    /**
+     * use to convert property name. will return new obj (shallow copy) of the altered property object
+     * @param {Object} obj the object to be convert
+     * @param {Boolean} jsToC if its from js to c or not. if js to c, the first letter will be uppercase, if not, the first letter will be lowercase
+     */
+    static __jsToC_CToJs(obj, jsToC = true) {
+        let type = "upperFirst";
+        if (!jsToC) {
+            type = "lowerFirst";
+        }
+        let newobj = {};
+        newobj = _.mapKeys(obj, (value, key, inObj) => {
+            if (_.isArray(value)) {
+                for (let i = 0; i < value.length; i++) {
+                    inObj[key][i] = this.__jsToC_CToJs(value[i], jsToC);
+                }
+            }
+            else if (Object.prototype.toString.call(value) === "[object Object]") {
+                let newer = this.__jsToC_CToJs(value, jsToC);
+                for (let propname in inObj[key]) {
+                    delete inObj[key][propname];
+                }
+                _.assign(inObj[key], newer);
+            }
+            return _[type](key);
+        });
+        //console.log(newobj);
+        return newobj;
+    }
 
 }

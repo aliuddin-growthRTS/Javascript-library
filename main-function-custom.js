@@ -231,5 +231,27 @@ class MainFunctionCustom {
         //console.log(newobj);
         return newobj;
     }
+    /**
+     * function that will set date to the earliest time of the day
+     * @param {Date} date the date object
+     * @param {Boolean} addDay either to add 1 day or not to the date
+     * @param {Boolean} isMutate either to mutate the current date object or return new date object
+     */
+    static __toExactMidnight(date, addDay, isMutate) {
+        if (isMutate) {
+            date.setHours(0); date.setMinutes(0); date.setSeconds(0); date.setMilliseconds(0);
+            if (addDay) {
+                date.setDate(date.getDate()+1);
+            }
+        }
+        else {
+            let newDate = date;
+            newDate.setHours(0); newDate.setMinutes(0); newDate.setSeconds(0); newDate.setMilliseconds(0);
+            if (addDay) {
+                newDate.setDate(date.getDate() + 1);
+            }
+            return newDate;
+        }
+    }
 
 }

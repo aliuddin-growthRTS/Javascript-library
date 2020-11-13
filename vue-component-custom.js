@@ -338,6 +338,10 @@ class VueCustomComponent {
             'uniqueColumn': {
                 'type': String,
                 'default': "__uniqueId__"
+            },
+            'usePageChangeHandler': {//if true, user need to user the 'pageChangeHandler' to handle page change, otherwise it will use computed value
+                'type': Boolean,
+                'default': false
             }
         },
         data() {
@@ -363,7 +367,7 @@ class VueCustomComponent {
                     textFilterProp[val] = { 'filterText': '' };
                 });
                 let filterDateProp = {};
-                this.filterDateKeys.forEach(function (val, index) {
+                this.filterDateKeys.forEach((val, index) => {
                     filterDateProp[val] = {};
                 });
                 let filterCheckBoxProp = {}; let filterCheckBoxProp2 = {};
@@ -424,40 +428,45 @@ class VueCustomComponent {
              * @param {Number} val current page
              */
             'handlePageChange'(val) {
-                if (val === 1) {
-                    this.tableFilterProp.limitDown = 0;
-                }
-                else {
-                    let newVal = (val - 1) * this.tableFilterProp.itemPerPage;
-                    this.tableFilterProp.limitDown = newVal;
-                }
+                setTimeout(() => { this.isInProg = true; });
+                setTimeout(() => {
+                    if (val === 1) {
+                        this.tableFilterProp.limitDown = 0;
+                    }
+                    else {
+                        let newVal = (val - 1) * this.tableFilterProp.itemPerPage;
+                        this.tableFilterProp.limitDown = newVal;
+                    }
+                });
             },
             /**
              *function to use for sorting the table
              * @param {String} colName the key of the table column that need to sort
              */
             'sortItem'(colName) {
-                try {
-                    this.isInProg = true;
-                    const isSame = (element) => element === colName; //create function to be used in .findIndex
-                    let df = "asc";
-                    let index = this.tableFilterProp.sorter.key.findIndex(isSame); //check if colName exist
-                    if (index >= 0) {//if exist
-                        if (this.tableFilterProp.sorter.sort[index] === 'asc') { //if asc, change to desc
-                            df = 'desc';
+                setTimeout(() => { this.isInProg = true; });
+                setTimeout(() => {
+                    try {
+                        const isSame = (element) => element === colName; //create function to be used in .findIndex
+                        let df = "asc";
+                        let index = this.tableFilterProp.sorter.key.findIndex(isSame); //check if colName exist
+                        if (index >= 0) {//if exist
+                            if (this.tableFilterProp.sorter.sort[index] === 'asc') { //if asc, change to desc
+                                df = 'desc';
+                            }
+                            else {
+                                //since df default is asc
+                            }
+                            //remove the old object for sort, then insert new one to the begining of array. this to make sure that the column name choosed to sort will be prioritize by the _.orderBy function.
+                            this.tableFilterProp.sorter.key.splice(index, 1);
+                            this.tableFilterProp.sorter.sort.splice(index, 1);
+                            this.tableFilterProp.sorter.key.unshift(colName);
+                            this.tableFilterProp.sorter.sort.unshift(df);
                         }
-                        else {
-                            //since df default is asc
-                        }
-                        //remove the old object for sort, then insert new one to the begining of array. this to make sure that the column name choosed to sort will be prioritize by the _.orderBy function.
-                        this.tableFilterProp.sorter.key.splice(index, 1);
-                        this.tableFilterProp.sorter.sort.splice(index, 1);
-                        this.tableFilterProp.sorter.key.unshift(colName);
-                        this.tableFilterProp.sorter.sort.unshift(df);
+                        this.tableFilterProp.totalChange++;
                     }
-                    this.tableFilterProp.totalChange++;
-                }
-                finally { this.isInProg = false; }
+                    finally { /*this.isInProg = false;*/ }
+                });
             },
             /**
              * function to  use in filter by text in table
@@ -465,111 +474,115 @@ class VueCustomComponent {
              * @param {any} forceRun either to force it run or not, because if the the prop previous text is same with current, it will not run the filter.
              */
             'filterTextFunc'(prop, forceRun = false) {
-                try {
-                    this.isInProg = true;
-                    let inData = _.clone(this.tableDataLocal);
-                    if (prop === '') {
-                        this.tableDataChange = inData;
-                        this.tableFilterProp.totalChange++;
-                    }
-                    else {
-                        if (this.tableFilterProp.filterText[prop].filterText !== this.textFilter[prop].filterText || forceRun) { //if prev not same as current or force run
-                            this.tableFilterProp.filterText[prop].filterText = this.textFilter[prop].filterText;
-                            if (this.tableFilterProp.totalRootChange > 0) { //if data root not change
-                                let textN = this.tableFilterProp.filterText[prop].filterText;
-
-                                if (/\S/.test(textN) && textN !== null) {
-                                    inData = _.filter(this.tableDataLocal, (o) => {
-                                        let isTrue = false;
-                                        try {
-                                            let innerObj = _.get(o, prop, null);
-                                            let innerString = _.toString(innerObj).toLowerCase();
-                                            if (innerString.includes(textN.toLowerCase())) {
-                                                isTrue = true;
-                                            }
-                                        }
-                                        catch (e) { console.log(e); }
-                                        return isTrue;
-                                    });
-                                }
-                                //differentiate with the tableDataLocal that have only id, where only different data will be taken
-                                let outData = _.differenceBy(this.tableDataLocalOnlyId, inData, this.uniqueColumn);
-                                //stored the id for unselected row
-                                this.tableFilterProp.filterText[prop].filteredData = outData;
-                                // then take the real needed rows
-                                //for filterText
-                                for (let inKey in this.tableFilterProp.filterText) {
-                                    if (inKey !== prop) {
-                                        inData = _.differenceBy(inData, this.tableFilterProp.filterText[inKey].filteredData, this.uniqueColumn);
-                                    }
-                                }
-                                //for filterDate
-                                for (let inKey in this.tableFilterProp.filterDate) {
-                                    inData = _.differenceBy(inData, this.tableFilterProp.filterDate[inKey].filteredData, this.uniqueColumn);
-                                }
-                                //for filterCheckbox
-                                for (let inKey in this.tableFilterProp.filterCheckBox) {
-                                    inData = _.differenceBy(inData, this.tableFilterProp.filterCheckBox[inKey].filteredData, this.uniqueColumn);
-                                }
-                            }
-                            // store final result
+                setTimeout(() => { this.isInProg = true; });
+                setTimeout(() => {
+                    try {
+                        let inData = _.clone(this.tableDataLocal);
+                        if (prop === '') {
                             this.tableDataChange = inData;
                             this.tableFilterProp.totalChange++;
                         }
+                        else {
+                            if (this.tableFilterProp.filterText[prop].filterText !== this.textFilter[prop].filterText || forceRun) { //if prev not same as current or force run
+                                this.tableFilterProp.filterText[prop].filterText = this.textFilter[prop].filterText;
+                                if (this.tableFilterProp.totalRootChange > 0) { //if data root not change
+                                    let textN = this.tableFilterProp.filterText[prop].filterText;
+
+                                    if (/\S/.test(textN) && textN !== null) {
+                                        inData = _.filter(this.tableDataLocal, (o) => {
+                                            let isTrue = false;
+                                            try {
+                                                let innerObj = _.get(o, prop, null);
+                                                let innerString = _.toString(innerObj).toLowerCase();
+                                                if (innerString.includes(textN.toLowerCase())) {
+                                                    isTrue = true;
+                                                }
+                                            }
+                                            catch (e) { console.log(e); }
+                                            return isTrue;
+                                        });
+                                    }
+                                    //differentiate with the tableDataLocal that have only id, where only different data will be taken
+                                    let outData = _.differenceBy(this.tableDataLocalOnlyId, inData, this.uniqueColumn);
+                                    //stored the id for unselected row
+                                    this.tableFilterProp.filterText[prop].filteredData = outData;
+                                    // then take the real needed rows
+                                    //for filterText
+                                    for (let inKey in this.tableFilterProp.filterText) {
+                                        if (inKey !== prop) {
+                                            inData = _.differenceBy(inData, this.tableFilterProp.filterText[inKey].filteredData, this.uniqueColumn);
+                                        }
+                                    }
+                                    //for filterDate
+                                    for (let inKey in this.tableFilterProp.filterDate) {
+                                        inData = _.differenceBy(inData, this.tableFilterProp.filterDate[inKey].filteredData, this.uniqueColumn);
+                                    }
+                                    //for filterCheckbox
+                                    for (let inKey in this.tableFilterProp.filterCheckBox) {
+                                        inData = _.differenceBy(inData, this.tableFilterProp.filterCheckBox[inKey].filteredData, this.uniqueColumn);
+                                    }
+                                }
+                                // store final result
+                                this.tableDataChange = inData;
+                                this.tableFilterProp.totalChange++;
+                            }
+                        }
                     }
-                }
-                finally { this.isInProg = false; }
+                    finally { /*this.isInProg = false;*/ }
+                });
             },
             /**
              * function use for date filter
              * @param {String} key the column name of the date column
              */
             'filterDateFunc'(key) {
-                try {
-                    this.isInProg = true;
-                    let inData = _.clone(this.tableDataLocal);
-                    //create default max and min date
-                    let maxDate = new Date(8640000000000000);
-                    let minDate = new Date(-8640000000000000);
+                setTimeout(() => { this.isInProg = true; });
+                setTimeout(() => {
                     try {
-                        if (_.isDate(this.dateFilter[key].startDate)) {
-                            minDate = this.dateFilter[key].startDate;
-                        }
-                        if (_.isDate(this.dateFilter[key].endDate)) {
-                            maxDate = _.clone(this.dateFilter[key].endDate);
-                            maxDate.setDate(maxDate.getDate() + 1); //add 1day, because we will user '<' operator. so the maxdate must be included
-                        }
-                        //return only data that will satisfy the condition
-                        inData = _.filter(this.tableDataLocal, (o) => {
-                            let yes = false;
-                            try {
-                                let theDate = _.get(o, key, null);
-                                if (theDate >= minDate && theDate <= maxDate) {
-                                    yes = true;
+                        let inData = _.clone(this.tableDataLocal);
+                        //create default max and min date
+                        let maxDate = new Date(8640000000000000);
+                        let minDate = new Date(-8640000000000000);
+                        try {
+                            if (_.isDate(this.dateFilter[key].startDate)) {
+                                minDate = this.dateFilter[key].startDate;
+                            }
+                            if (_.isDate(this.dateFilter[key].endDate)) {
+                                maxDate = _.clone(this.dateFilter[key].endDate);
+                                maxDate.setDate(maxDate.getDate() + 1); //add 1day, because we will user '<' operator. so the maxdate must be included
+                            }
+                            //return only data that will satisfy the condition
+                            inData = _.filter(this.tableDataLocal, (o) => {
+                                let yes = false;
+                                try {
+                                    let theDate = _.get(o, key, null);
+                                    if (theDate >= minDate && theDate <= maxDate) {
+                                        yes = true;
+                                    }
+                                }
+                                catch (e) { }
+                                return yes;
+                            });
+                            //this part same as text filter, but start with date first
+                            let outData = _.differenceBy(this.tableDataLocalOnlyId, inData, this.uniqueColumn);
+                            this.tableFilterProp.filterDate[key].filteredData = outData;
+                            for (let inKey in this.tableFilterProp.filterDate) {
+                                if (inKey !== key) {
+                                    inData = _.differenceBy(inData, this.tableFilterProp.filterDate[inKey].filteredData, this.uniqueColumn);
                                 }
                             }
-                            catch (e) { }
-                            return yes;
-                        });
-                        //this part same as text filter, but start with date first
-                        let outData = _.differenceBy(this.tableDataLocalOnlyId, inData, this.uniqueColumn);
-                        this.tableFilterProp.filterDate[key].filteredData = outData;
-                        for (let inKey in this.tableFilterProp.filterDate) {
-                            if (inKey !== key) {
-                                inData = _.differenceBy(inData, this.tableFilterProp.filterDate[inKey].filteredData, this.uniqueColumn);
+                            for (let inKey in this.tableFilterProp.filterText) {
+                                inData = _.differenceBy(inData, this.tableFilterProp.filterText[inKey].filteredData, this.uniqueColumn);
                             }
-                        }
-                        for (let inKey in this.tableFilterProp.filterText) {
-                            inData = _.differenceBy(inData, this.tableFilterProp.filterText[inKey].filteredData, this.uniqueColumn);
-                        }
-                        for (let inKey in this.tableFilterProp.filterCheckBox) {
-                            inData = _.differenceBy(inData, this.tableFilterProp.filterCheckBox[inKey].filteredData, this.uniqueColumn);
-                        }
-                        this.tableDataChange = inData;
-                    } catch (e) { console.log(e); }
-                    this.tableFilterProp.totalChange++;
-                }
-                finally { this.isInProg = false; }
+                            for (let inKey in this.tableFilterProp.filterCheckBox) {
+                                inData = _.differenceBy(inData, this.tableFilterProp.filterCheckBox[inKey].filteredData, this.uniqueColumn);
+                            }
+                            this.tableDataChange = inData;
+                        } catch (e) { console.log(e); }
+                        this.tableFilterProp.totalChange++;
+                    }
+                    finally { /*this.isInProg = false; */ }
+                });
             },
             /**
              * use to catch input event on element-ui datepicker sice there's bug where the view not updated
@@ -581,31 +594,34 @@ class VueCustomComponent {
              * function to create unique filter. will be called whenever data refreshed.
              * */
             'createUniqueFilter'() {
-                try {
-                    this.isInProg = true;
-                    this.filterCheckBoxKeys.forEach(function (key, index) {
-                        let newArr = _.uniqBy(this.tableDataLocal, key); //get only unique value, repeated value will only return once
-                        let toCheckU = [];
-                        newArr.forEach(function (val, ind) {
-                            toCheckU.push({ "text": val[key], "isSelected": true }); //create object, default is checked
+                setTimeout(() => { this.isInProg = true; });
+                setTimeout(() => {
+                    try {
+                        this.filterCheckBoxKeys.forEach((key, index) => {
+                            let newArr = _.uniqBy(this.tableDataLocal, key); //get only unique value, repeated value will only return once
+                            let toCheckU = [];
+                            newArr.forEach((val, ind) => {
+                                toCheckU.push({ "text": val[key], "isSelected": true }); //create object, default is checked
+                            });
+                            let toAdd = _.differenceBy(toCheckU, this.checkBoxFilter[key].checkList, "text"); //get list of unique value that needed to be added after data refresh
+                            let toRemove = _.differenceBy(this.checkBoxFilter[key].checkList, toCheckU, "text"); // data to remove after refresh
+                            let afterRemove = _.differenceBy(this.checkBoxFilter[key].checkList, toRemove, "text"); //after removed data
+                            this.checkBoxFilter[key].checkList = _.orderBy(afterRemove.concat(toAdd), "text", "asc"); //oredered the final list in ascending order
                         });
-                        let toAdd = _.differenceBy(toCheckU, this.checkBoxFilter[key].checkList, "text"); //get list of unique value that needed to be added after data refresh
-                        let toRemove = _.differenceBy(this.checkBoxFilter[key].checkList, toCheckU, "text"); // data to remove after refresh
-                        let afterRemove = _.differenceBy(this.checkBoxFilter[key].checkList, toRemove, "text"); //after removed data
-                        this.checkBoxFilter[key].checkList = _.orderBy(afterRemove.concat(toAdd), "text", "asc"); //oredered the final list in ascending order
-                    });
-                }
-                finally { this.isInProg = false; }
+                    }
+                    finally { /*this.isInProg = false; */ }
+                });
             },
             /**
              * function that will be used for checkbox filter
              * @param {String} key the column name that need to be filtered
              */
             'filterCheckBoxFunc'(key) {
-                try {
-                    this.isInProg = true;
-                    if (key !== null) {
-                        MainFunctionCustom.__sleep(100).then(() => {
+                setTimeout(() => { this.isInProg = true; });
+                setTimeout(() => {
+                    try {
+                        if (key !== null) {
+                            //    MainFunctionCustom.__sleep(100).then(() => {
                             let inData = _.clone(this.tableDataLocal);
                             try {
                                 let newArr = [];
@@ -632,7 +648,7 @@ class VueCustomComponent {
                                 }
                                 //this part same as text filter, but start with checkbox first
                                 let outData = _.differenceBy(this.tableDataLocalOnlyId, inData, this.uniqueColumn);
-                                this.tableFilterProp.checkBoxFilter[key].filteredData = outData;
+                                this.tableFilterProp.filterCheckBox[key].filteredData = outData;
                                 for (let inKey in this.tableFilterProp.filterCheckBox) {
                                     if (inKey !== key) {
                                         inData = _.differenceBy(inData, this.tableFilterProp.filterCheckBox[inKey].filteredData, this.uniqueColumn);
@@ -646,15 +662,16 @@ class VueCustomComponent {
                                 }
                                 this.tableDataChange = inData;
                             } catch (e) { console.log(e); }
-                        });
+                            //   });
+                        }
+                        else {// if key is null, then get all
+                            let inData = _.clone(this.tableDataLocal);
+                            this.tableDataChange = inData;
+                        }
+                        this.tableFilterProp.totalChange++;
                     }
-                    else {// if key is null, then get all
-                        let inData = _.clone(this.tableDataLocal);
-                        this.tableDataChange = inData;
-                    }
-                    this.tableFilterProp.totalChange++;
-                }
-                finally { this.isInProg = false; }
+                    finally { /*this.isInProg = false;*/ }
+                });
             },
             /**
              * function for check all checkbox
@@ -662,7 +679,7 @@ class VueCustomComponent {
              */
             'filterCheckBoxCheckAllFunc'(key) {
                 this.checkBoxFilter[key].isCheckAll = !this.checkBoxFilter[key].isCheckAll;
-                this.checkBoxFilter[key].checkList.forEach(function (val, index) {
+                this.checkBoxFilter[key].checkList.forEach((val, index) => {
                     this.checkBoxFilter[key].checkList[index].isSelected = this.checkBoxFilter[key].isCheckAll;
                 });
             },
@@ -676,27 +693,27 @@ class VueCustomComponent {
                     this.checkBoxFilter[key].isCheckAll = false;
                 }
             },
-            'getLocalTableData'() {
+            'getLocalTableData'(cloneDeep = true) {
                 let data = this.tableDataLocal;
-                if (this.useLocalCopy) {
+                if (cloneDeep) {
                     return _.cloneDeep(data);
                 }
                 else {
                     return data;
                 }
             },
-            'getChangeTableData'() {
+            'getChangeTableData'(cloneDeep = true) {
                 let data = this.tableDataChange;
-                if (this.useLocalCopy) {
+                if (cloneDeep) {
                     return _.cloneDeep(data);
                 }
                 else {
                     return data;
                 }
             },
-            'getCurrentShowedData'() {
+            'getCurrentShowedData'(cloneDeep = true) {
                 let data = this.sortedItem;
-                if (this.useLocalCopy) {
+                if (cloneDeep) {
                     return _.cloneDeep(data);
                 }
                 else {
@@ -707,92 +724,96 @@ class VueCustomComponent {
              * function that will run on tabledata props change.
              * */
             'runOnUpdate'(newVal) {
-                try {
-                    this.isInProg = true;
-                    let data = newVal;
-                    // if use local copy, deep copy the tabledata prop
-                    if (this.useLocalCopy) {
-                        data = _.cloneDeep(data);
-                    }
-                    //if user not specify unique key, create custom unique key
-                    if (this.uniqueColumn === '__uniqueId__') {
-                        data.forEach((val, index) => {
-                            Object.defineProperty(data[index], this.uniqueColumn, {
-                                enumerable: false,
-                                writable: false,
-                                value: index
+                setTimeout(() => { this.isInProg = true; });
+                setTimeout(() => {
+                    try {
+                        let data = newVal;
+                        // if use local copy, deep copy the tabledata prop
+                        if (this.useLocalCopy) {
+                            data = _.cloneDeep(data);
+                        }
+                        //if user not specify unique key, create custom unique key
+                        if (this.uniqueColumn === '__uniqueId__') {
+                            data.forEach((val, index) => {
+                                if (!_.has(val, this.uniqueColumn)) {
+                                    Object.defineProperty(data[index], this.uniqueColumn, {
+                                        enumerable: false,
+                                        writable: false,
+                                        value: index
+                                    });
+                                }
                             });
-                        });
-                    }
-                    this.tableDataLocal = data;
-                    this.tableDataChange = data;
-                    this.tableFilterProp.totalRootChange++;
-                    // this.tableFilterProp.totalChange++;
-                    //create a tabledatalocalonlyid array
-                    let objArr = [];
-                    for (let i = 0; i < data.length; i++) {
-                        if (data[i].hasOwnProperty(this.uniqueColumn)) {
+                        }
+                        this.tableDataLocal = data;
+                        this.tableDataChange = data;
+                        this.tableFilterProp.totalRootChange++;
+                        // this.tableFilterProp.totalChange++;
+                        //create a tabledatalocalonlyid array
+                        let objArr = [];
+                        for (let i = 0; i < data.length; i++) {
+                            if (data[i].hasOwnProperty(this.uniqueColumn)) {
+                                let newObj = {};
+                                Object.defineProperty(newObj, this.uniqueColumn, {
+                                    enumerable: false,
+                                    writable: false,
+                                    value: data[i][this.uniqueColumn]
+                                });
+                                objArr.push(newObj);
+                            }
+                            else {
+                                console.warn("no property '" + this.uniqueColumn + "' for tableData at row number " + (i + 1) + ". this may result unexpected behaviour of the functioning table.");
+                            }
+                        }
+                        data.forEach((val, index) => {
                             let newObj = {};
                             Object.defineProperty(newObj, this.uniqueColumn, {
                                 enumerable: false,
                                 writable: false,
-                                value: data[i][this.uniqueColumn]
+                                value: val[this.uniqueColumn]
                             });
                             objArr.push(newObj);
+                        });
+                        this.tableDataLocalOnlyId = _.clone(objArr);
+                        // here some initializing
+                        for (let prop in this.tableFilterProp.filterText) {
+                            this.tableFilterProp.filterText[prop].filteredData = [];
+                        }
+                        for (let prop in this.tableFilterProp.filterDate) {
+                            this.tableFilterProp.filterDate[prop].filteredData = [];
+                        }
+                        //create first uniquefilter
+                        this.createUniqueFilter();
+
+                        if (_.isEmpty(this.tableFilterProp.filterText)) {
+                            this.filterTextFunc('', true);
                         }
                         else {
-                            console.warn("no property '" + this.uniqueColumn + "' for tableData at row number " + (i + 1) + ". this may result unexpected behaviour of the functioning table.");
+                            for (let o in this.tableFilterProp.filterText) {
+                                this.filterTextFunc(o, true);
+                            }
+                        }
+                        if (_.isEmpty(this.tableFilterProp.filterDate)) {
+                            // local[uniqueKey + 'filterDateFunc']('');
+                        }
+                        else {
+                            for (let o in this.tableFilterProp.filterDate) {
+                                this.filterDateFunc(o);
+                            }
+                        }
+                        if (_.isEmpty(this.tableFilterProp.filterCheckBox)) {
+                            //local[uniqueKey + 'filterCheckBoxFunc'](null);
+                        }
+                        else {
+                            for (let o in this.tableFilterProp.filterCheckBox) {
+                                this.filterCheckBoxFunc(o);
+                            }
                         }
                     }
-                    data.forEach((val, index) => {
-                        let newObj = {};
-                        Object.defineProperty(newObj, this.uniqueColumn, {
-                            enumerable: false,
-                            writable: false,
-                            value: val[this.uniqueColumn]
-                        });
-                        objArr.push(newObj);
-                    });
-                    this.tableDataLocalOnlyId = _.clone(objArr);
-                    // here some initializing
-                    for (let prop in this.tableFilterProp.filterText) {
-                        this.tableFilterProp.filterText[prop].filteredData = [];
+                    catch (e) { console.error(e) }
+                    finally {
+                        //this.isInProg = false;
                     }
-                    for (let prop in this.tableFilterProp.filterDate) {
-                        this.tableFilterProp.filterDate[prop].filteredData = [];
-                    }
-                    //create first uniquefilter
-                    this.createUniqueFilter();
-
-                    if (_.isEmpty(this.tableFilterProp.filterText)) {
-                        this.filterTextFunc('', true);
-                    }
-                    else {
-                        for (let o in this.tableFilterProp.filterText) {
-                            this.filterTextFunc(o, true);
-                        }
-                    }
-                    if (_.isEmpty(this.tableFilterProp.filterDate)) {
-                        // local[uniqueKey + 'filterDateFunc']('');
-                    }
-                    else {
-                        for (let o in this.tableFilterProp.filterDate) {
-                            this.filterDateFunc(o);
-                        }
-                    }
-                    if (_.isEmpty(this.tableFilterProp.filterCheckBox)) {
-                        //local[uniqueKey + 'filterCheckBoxFunc'](null);
-                    }
-                    else {
-                        for (let o in this.tableFilterProp.filterCheckBox) {
-                            this.filterCheckBoxFunc(o);
-                        }
-                    }
-                }
-                catch (e) { console.error(e) }
-                finally {
-                    this.isInProg = false;
-                }
+                });
             },
             'testMethod'(x) { alert(x); }
         },
@@ -805,13 +826,47 @@ class VueCustomComponent {
                 },
                 'deep': true,
                 //'immediate':true
-            }
+            },
+            /*  'tableFilterProp': {
+                      'handler': function (newVal, oldVal) {
+                          console.log(newVal);
+                      },
+                      'deep': true,
+                      //'immediate':true
+                  },
+                  'tableDataChange': {
+                      'handler': function (newVal, oldVal) {
+                          console.log(newVal);
+                      },
+                      'deep': true,
+                      //'immediate':true
+                  },
+                  'oldTableFilterProp': {
+                      'handler': function (newVal, oldVal) {
+                          console.log(newVal);
+                      },
+                      'deep': true,
+                      //'immediate':true
+                  },
+                  'orderedItems': {
+                      'handler': function (newVal, oldVal) {
+                          console.log(newVal);
+                      },
+                      'deep': true,
+                      //'immediate':true
+                  },
+                  'usePageChangeHandler': {
+                      'handler': function (newVal, oldVal) {
+                          console.log(newVal);
+                      },
+                      'deep': true,
+                      //'immediate':true
+                  },*/
         },
         computed: {
             'sortedItem'() {
                 let returner = [];
                 try {
-                    this.isInProg = true;
                     if (this.tableFilterProp.totalChange !== this.oldTableFilterProp.totalChange) {
                         if (this.tableFilterProp.totalChange === 1) {
                             this.orderedItems = _.orderBy(this.tableDataChange, [this.defaultSorter].concat(this.tableFilterProp.sorter.key), [this.defaultOrder].concat(this.tableFilterProp.sorter.sort));
@@ -824,7 +879,11 @@ class VueCustomComponent {
                         this.oldTableFilterProp.totalRootChange = this.tableFilterProp.totalRootChange;
                     }
                     returner = _.filter(this.orderedItems, (o, index) => {
-                        if (index >= this.limitDown && index < (this.limitDown + this.tableFilterProp.itemPerPage)) {
+                        let limitDown = this.tableFilterProp.limitDown;
+                        if (!this.usePageChangeHandler) {
+                            limitDown = this.limitDown;
+                        }
+                        if (index >= limitDown && index < (limitDown + this.tableFilterProp.itemPerPage)) {
                             return true;
                         }
                         else {
@@ -833,13 +892,14 @@ class VueCustomComponent {
                     });
                     // returner = local.limitBy(local[uniqueKey + 'orderedItems'], local[uniqueKey + 'tableFilterProp'].itemPerPage, local[uniqueKey + 'limitDown']);
                 }
-                finally { this.isInProg = false; }
+                finally { setTimeout(() => { this.isInProg = false; }); }
                 return returner;
             },
             'limitDown'() {
                 let newVal;
+                setTimeout(() => { this.isInProg = true; });
                 try {
-                    this.isInProg = true;
+                    //this.isInProg = true;
                     if (this.tableFilterProp.currentPage === 1) {
                         newVal = 0;
                     }
@@ -848,14 +908,14 @@ class VueCustomComponent {
                         //local[uniqueKey + 'tableFilterProp']['limitDown'] = newVal;
                     }
                 }
-                finally { this.isInProg = false; }
+                finally { /*this.isInProg = false;*/ }
                 return newVal;
             },
         },
         template: `
 <div>
-<slot :filterDateInput='filterDateInput'  :triggerDateInput='triggerDateInput' :tableDataChange = "tableDataChange" :tableFilterProp='tableFilterProp' :sortItem='sortItem' :textFilter='textFilter' :filterTextFunc='filterTextFunc' :dateFilter='dateFilter' :filterDateFunc='filterDateFunc'
- :filterCheckBoxFunc='filterCheckBoxFunc' :filterCheckBoxCheckAllFunc='filterCheckBoxCheckAllFunc' :filtercheckBoxAlterCheckAll='filtercheckBoxAlterCheckAll' :checkBoxFilter='checkBoxFilter' :sortedItem = 'sortedItem'></slot>
+<slot :isInProg='isInProg' :filterDateInput='filterDateInput'  :triggerDateInput='triggerDateInput' :tableDataChange = "tableDataChange" :tableFilterProp='tableFilterProp' :sortItem='sortItem' :textFilter='textFilter' :filterTextFunc='filterTextFunc' :dateFilter='dateFilter' :filterDateFunc='filterDateFunc'
+ :filterCheckBoxFunc='filterCheckBoxFunc' :filterCheckBoxCheckAllFunc='filterCheckBoxCheckAllFunc' :filtercheckBoxAlterCheckAll='filtercheckBoxAlterCheckAll' :checkBoxFilter='checkBoxFilter' :sortedItem = 'sortedItem' :handlePageChange='handlePageChange'></slot>
 </div>
 `
     }
@@ -863,8 +923,17 @@ class VueCustomComponent {
      * custom component for select2
      * */
     static __select2 = {
+        created() {
+            if (this.multiple) {
+
+            }
+        },
         props: {
             "multiple": {
+                "type": Boolean,
+                "default": false
+            },
+            "required": {
                 "type": Boolean,
                 "default": false
             },
@@ -880,66 +949,135 @@ class VueCustomComponent {
                     return {};
                 }
             },
+            "propId": {
+                'type': String,
+                'default': "id",
+            },
+            "propText": {
+                'type': String,
+                'default': "text",
+            },
+            "propDisabled": {
+                'type': String,
+                'default': null,
+            },
             "value": {
             },
         },
         data() {
             return {
-                "innerData": {},
+                "innerData": [],
+                "idSelected": null,
             }
         },
         mounted: function () {
             let opt = {};
+            this.mappingData();
             opt = _.cloneDeep(this.options);
-            opt["data"] = this.data;
+            opt["data"] = _.cloneDeep(this.innerData);
             var vm = this;
+            if (vm.multiple) {
+                if (vm.value !== null && vm.value.length > 0) {
+                    vm.idSelected = [];
+                    for (let i = 0; i < vm.value.length; i++) {
+                        vm.idSelected.push(vm.value[i][vm.propId]);
+                    }
+                }
+            }
+            else {
+                if (vm.value !== null && vm.value[vm.propId] !== undefined) {
+                    vm.idSelected = vm.value[vm.propId];
+                }
+            }
             $(this.$el)
                 // init select2
                 .select2(opt)
-                .val(this.value.id)
-                .trigger("change")
                 // emit event on change.
                 .on("change", function () {
                     //first get the id selected, the get the object with the id.
-                    let id = this.value;
-                    let currentData = _.find(vm.data, function (o) { return o.id == id });
-                    vm.$emit("input", currentData);
+                    if (vm.multiple) {
+                        vm.idSelected = $(this).val();
+                        let currentData = _.filter(vm.data, function (o) {
+                            return vm.idSelected.includes(o[vm.propId] + "");
+                        });
+                        vm.$emit("input", currentData);
+                    }
+                    else {
+                        vm.idSelected = $(this).val();
+                        let currentData = _.find(vm.data, function (o) { return o[vm.propId] == vm.idSelected });
+                        vm.$emit("input", currentData);
+                    }
                 });
+            $(this.$el).val(vm.idSelected)
+                .trigger("change");
+        },
+        methods: {
+            mappingData() {
+                this.innerData = [];
+                for (let i = 0; i < this.data.length; i++) {
+                    let newData = {};
+                    newData.id = this.data[i][this.propId];
+                    newData.text = this.data[i][this.propText];
+                    if (this.propDisabled !== null) {
+                        newData.disabled = this.data[i][this.propDisabled];
+                    }
+                    this.innerData.push(newData);
+                }
+            },
         },
         computed: {
-            "localOptions": function () {
-                let option = {};
-                option = _.cloneDeep(this.options);
-                option["data"] = this.data;
-                return option;
-            }
+            local() {
+                return this.value ? this.value : {}
+            },
         },
         watch: {
-            value: function (value) {
+            value: function (value, oldValue) {
                 // update value
-                $(this.$el).val(value.id).trigger("change");
-                this.$emit("on-change-select");
+                if (!_.isEqual(value, oldValue)) {
+                    if (this.multiple) {
+                        let values = [];
+                        for (let i = 0; i < value.length; i++) {
+                            values.push(value[i][this.propId]);
+                        }
+                        $(this.$el).val(values).trigger("change");
+                    }
+                    else {
+                        if (value !== null && typeof value !== "undefined") {
+                            $(this.$el).val(value[this.propId]).trigger("change");
+                        }
+                        else {
+                            $(this.$el).val(value).trigger("change");
+                        }
+                    }
+                    this.$emit("change-select");
+                    this.$emit("on-change-select"); // this event is deprecated. use change-select instead.
+                }
             },
-            data: function (data) {
+            data: function (data, oldData) {
                 // update data
-                let opt = {};
-                opt = _.cloneDeep(this.options);
-                opt["data"] = data;
-                $(this.$el).empty().select2(opt);
+                if (!_.isEqual(data, oldData)) {
+                    let opt = {};
+                    opt = _.cloneDeep(this.options);
+                    this.mappingData();
+                    opt["data"] = this.innerData;
+                    $(this.$el).empty().select2(opt);
+                }
             },
-            options: function (options) {
-                // update data
-                let opt = {};
-                opt = _.cloneDeep(options);
-                opt["data"] = this.data;
-                $(this.$el).empty().select2(opt);
+            options: function (options, oldOptions) {
+                // update options
+                if (!_.isEqual(options, oldOptions)) {
+                    let opt = {};
+                    opt = _.cloneDeep(options);
+                    opt["data"] = this.innerData;
+                    $(this.$el.children[0]).empty().select2(opt);
+                }
             }
         },
         destroyed: function () {
             $(this.$el).off().select2("destroy");
         },
         template: `
-<select :multiple="multiple">
+<select :multiple="multiple" :required="required">
             <slot></slot>
         </select>
 `,

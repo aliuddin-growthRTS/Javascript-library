@@ -78,12 +78,16 @@ class VueCustomComponent {
                 "type": Number,
                 "default": 0
             },
+            "cOnlyShowWhenOverflow": {
+                "type": Boolean,
+                "default": true,
+            }
         },
         data() {
             return {
                 "show": false,
                 "onHover": (evt) => {
-                    if (evt.target.offsetWidth < evt.target.scrollWidth) {
+                    if (evt.target.offsetWidth < evt.target.scrollWidth || !this.cOnlyShowWhenOverflow) {
                         // if (evt.target.firstElementChild.offsetWidth < evt.target.firstElementChild.scrollWidth) {
                         this.show = true;
                     }
@@ -288,7 +292,7 @@ class VueCustomComponent {
     }
 
     /**
-     * component that will generate the functionallity for the table like filter, sort and so on.
+     * component that will generate the functionallity for the table like filter, sort and so on. the function can be use by declaring the v-slot.
      * */
     static __tableFunction = {
         created() {

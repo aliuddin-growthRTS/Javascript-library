@@ -37,7 +37,7 @@ class MainFunctionCustom {
             _.unset(originalObject, path)
         }
 
-        return clonedObject;
+      //  return clonedObject;
     }
     //
     /**
@@ -165,6 +165,13 @@ class MainFunctionCustom {
         catch (e) { console.error(e); }
         return n;
     }
+    /**
+     * function use for zooming the element using css transform property
+     * @param {String} eleId the idd for the element that need to be zoommed
+     * @param {Number|String} scale the scale for the zoom, 1 is default size
+     * @param {Number|String} vPercent value first in transform origin property
+     * @param {Number|String} hPercent value second in transform origin property
+     */
     static __zoomDiv2 = (eleId, scale, vPercent = 0, hPercent = 0) => {
         let p = ["webkit", "moz", "ms", "o"];
         let success = false;
@@ -241,7 +248,7 @@ class MainFunctionCustom {
         if (isMutate) {
             date.setHours(0); date.setMinutes(0); date.setSeconds(0); date.setMilliseconds(0);
             if (addDay) {
-                date.setDate(date.getDate()+1);
+                date.setDate(date.getDate() + 1);
             }
         }
         else {
@@ -252,6 +259,65 @@ class MainFunctionCustom {
             }
             return newDate;
         }
+    }
+    /**
+     * convert total duration in seconds to string readable duration  (day, hour and minute). eg '2 days 1 hour 34 minutes.'
+     * @param {Number|String} duration total duration in seconds 
+     */
+    static __durationStrMaker(duration) {
+        let day = 0, hour = 0, minute = 0;
+        let dayS = ' day, ', hourS = ' hour, ', minuteS = ' minute';
+        try {
+            if (isFinite(duration)) {
+                let time = Number(duration);
+                if (time > 0) {
+                    day = Math.trunc(time / 86400);
+                    time %= 86400;
+                    hour = Math.trunc(time / 3600);
+                    time %= 3600;
+                    minute = Math.trunc(time / 60);
+                }
+            }
+            if (day > 1) {
+                dayS = ' days, ';
+            }
+            if (hour > 1) {
+                hourS = ' hours, ';
+            }
+            if (minute > 1) {
+                minuteS = ' minutes';
+            }
+        }
+        catch (e) { console.error(e); }
+        return day + dayS + hour + hourS + minute + minuteS;
+    }
+    /**
+     * check if element is visible in the viewport or not
+     * @param {Element} ele the element
+     */
+    static __isInViewPort(ele) {
+        const rect = ele.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    }
+    /**
+     * check if element is currently on parent element vieport,
+     * @param {Element} ele the element
+     * @param {Element} eleParent the parent element
+     */
+    static __isInParentViewPort(ele, eleParent, offsetHeight = 0.5, offsetWidth = 0.5) {
+        const rect = ele.getBoundingClientRect();
+        const rectParent = eleParent.getBoundingClientRect();
+        return (
+            (rect.top + rect.height * offsetHeight) <= rectParent.bottom &&
+            (rect.left + rect.width * offsetWidth) <= rectParent.right &&
+            (rect.bottom - rect.height * offsetHeight) >= (rectParent.top) &&
+            (rect.right - rect.width * offsetWidth) >= (rectParent.left)
+        )
     }
 
 }

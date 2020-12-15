@@ -87,7 +87,7 @@ class VueCustomComponent {
             return {
                 "show": false,
                 "onHover": (evt) => {
-                    if (evt.target.offsetWidth < evt.target.scrollWidth || !this.cOnlyShowWhenOverflow) {
+                    if (evt.target.offsetWidth < evt.target.scrollWidth || evt.target.offsetHeight < evt.target.scrollHeight || !this.cOnlyShowWhenOverflow) {
                         // if (evt.target.firstElementChild.offsetWidth < evt.target.firstElementChild.scrollWidth) {
                         this.show = true;
                     }

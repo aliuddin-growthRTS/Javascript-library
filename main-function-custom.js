@@ -265,7 +265,7 @@ class MainFunctionCustom {
      * @param {Number|String} duration total duration in seconds 
      */
     static __durationStrMaker(duration) {
-        let day = 0, hour = 0, minute = 0;
+         let day = 0, hour = 0, minute = 0;
         let dayS = ' day, ', hourS = ' hour, ', minuteS = ' minute';
         try {
             if (isFinite(duration)) {
@@ -278,6 +278,9 @@ class MainFunctionCustom {
                     minute = Math.trunc(time / 60);
                 }
             }
+            else {
+                return '';
+            }
             if (day > 1) {
                 dayS = ' days, ';
             }
@@ -288,7 +291,10 @@ class MainFunctionCustom {
                 minuteS = ' minutes';
             }
         }
-        catch (e) { console.error(e); }
+        catch (e) {
+            console.error(e);
+            return "";
+        }
         return day + dayS + hour + hourS + minute + minuteS;
     }
     /**

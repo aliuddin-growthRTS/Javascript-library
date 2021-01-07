@@ -80,7 +80,7 @@ class VueCustomComponent {
             },
             "cOnlyShowWhenOverflow": {
                 "type": Boolean,
-                "default": true,
+                "default":true,
             }
         },
         data() {
@@ -639,9 +639,9 @@ class VueCustomComponent {
                                 newArr = _.filter(inData, function (o) {
                                     let isTrue = false;
                                     try {
-                                        let innerObj = _.get(o, key, null);
-                                        let innerString = _.toString(innerObj);
-                                        isTrue = arrSelects.includes(innerString);
+                                        let innerObj = _.get(o, key);
+                                      //  let innerString = _.toString(innerObj);
+                                        isTrue = arrSelects.includes(innerObj);
                                     }
                                     catch (e) { console.log(e); }
                                     return isTrue;
@@ -965,6 +965,10 @@ class VueCustomComponent {
                 'type': String,
                 'default': null,
             },
+            "clearSelectionOnDataChange": {
+                'type': Boolean,
+                'default':true
+            },
             "value": {
             },
         },
@@ -1065,6 +1069,9 @@ class VueCustomComponent {
                     this.mappingData();
                     opt["data"] = this.innerData;
                     $(this.$el).empty().select2(opt);
+                    if (this.clearSelectionOnDataChange) {
+                        $(this.$el).val(null).trigger('change');
+                    }
                 }
             },
             options: function (options, oldOptions) {

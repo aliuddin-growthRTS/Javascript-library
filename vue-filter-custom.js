@@ -4,26 +4,30 @@
  * */
 
 class VueFilterCustom {
-    /**
+      /**
      * fitler to format the date text display
      *  @param {String | Date} value the value that need to be parsed
 * @param {String} format foramat
+* @param {String} placeholder placeholder for invalid date
      * **/
-    static __dateTextFilter = (value, format = "DD-MMM-yyyy") => { //
+    static __dateTextFilter = (value, format = "DD-MMM-yyyy", placeholder="") => { //
         if (Object.prototype.toString.call(value) === '[object Date]') {
             return moment(value).format(format);
         }
         else if (Object.prototype.toString.call(value) === '[object String]') {
             let n = Date.parse(value);
+            if (n < 0) {
+                return placeholder;
+            }
             if (!isNaN(n)) {
                 return moment(value).format(format);
             }
             else {
-                return '';
+                return placeholder;
             }
         }
         else
-            return '';
+            return placeholder;
     }
     /**
     *custom number filter based on numbro.js

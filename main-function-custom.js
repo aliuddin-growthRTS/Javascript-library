@@ -37,7 +37,7 @@ class MainFunctionCustom {
             _.unset(originalObject, path)
         }
 
-      //  return clonedObject;
+        //  return clonedObject;
     }
     //
     /**
@@ -223,7 +223,12 @@ class MainFunctionCustom {
         newobj = _.mapKeys(obj, (value, key, inObj) => {
             if (_.isArray(value)) {
                 for (let i = 0; i < value.length; i++) {
-                    inObj[key][i] = this.__jsToC_CToJs(value[i], jsToC);
+                    if (Object.prototype.toString.call(value[i]) === "[object Object]" || Object.prototype.toString.call(value[i]) === "[object Array]") {
+                        inObj[key][i] = this.__jsToC_CToJs(value[i], jsToC);
+                    }
+                    else {
+                        //do nothing
+                    }
                 }
             }
             else if (Object.prototype.toString.call(value) === "[object Object]") {
@@ -265,7 +270,7 @@ class MainFunctionCustom {
      * @param {Number|String} duration total duration in seconds 
      */
     static __durationStrMaker(duration) {
-         let day = 0, hour = 0, minute = 0;
+        let day = 0, hour = 0, minute = 0;
         let dayS = ' day, ', hourS = ' hour, ', minuteS = ' minute';
         try {
             if (isFinite(duration)) {

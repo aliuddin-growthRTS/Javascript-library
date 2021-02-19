@@ -4,7 +4,7 @@
  * */
 
 class VueFilterCustom {
-      /**
+    /**
      * fitler to format the date text display
      *  @param {String | Date} value the value that need to be parsed
 * @param {String} format foramat

@@ -111,9 +111,10 @@ class VueCustomComponent {
  :open-delay='cOpenDelay' :popper-class='cPopperClass' :enterable='cEnterable' :hide-after='cHideAfter' :tabindex='cTabindex'
  :value='show' :manual='true'>
     <slot></slot>
-<template v-if='$slots.cContent'>
-    <div slot='content'>
-    <slot name='cContent'></slot>
+    <slot name='ccontent'></slot>
+<template v-if='$slots.ccontent'>
+    <div slot='content' v-html='$slots.ccontent[0].text'>
+
 </div>
 </template>
  </el-tooltip>
@@ -381,7 +382,7 @@ class VueCustomComponent {
                 });
                 let sorterProp = { "key": this.sorterKeys, "sort": [] };
                 this.sorterKeys.forEach((val, index) => {
-                    sorterProp["sort"].push('asc');
+                    sorterProp["sort"].push(this.defaultOrder);
                 });
                 this.tableFilterProp = {
                     'totalRootChange': 0 /* total change of the root*/, 'totalChange': 0/*how many times filter is used*/, "prop": this.defaultSorter,
